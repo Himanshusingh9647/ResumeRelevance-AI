@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Github, Twitter, Sparkles } from 'lucide-react';
 import { HeroSection, AnalyzerSection, ResultsDashboard } from './components';
@@ -53,6 +53,7 @@ function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleAnalyze = useCallback(async () => {
     if (!file || !jobDescription.trim()) return;
@@ -77,28 +78,33 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 relative">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full blur-3xl opacity-10 animate-float" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500 rounded-full blur-3xl opacity-10 animate-float" style={{ animationDelay: '-2s' }} />
+      </div>
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-cyan-400/20 bg-slate-900/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-blue-500 to-pink-500 flex items-center justify-center shadow-lg shadow-cyan-400/30">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="text-lg font-bold text-white">ResumeRelevance<span className="text-indigo-400">AI</span></span>
+              <span className="text-lg font-bold text-white">ResumeRelevance<span className="bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">AI</span></span>
             </div>
             <div className="flex items-center gap-4">
               <a
                 href="#"
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-cyan-400 transition-colors"
                 aria-label="GitHub"
               >
                 <Github className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-cyan-400 transition-colors"
                 aria-label="Twitter"
               >
                 <Twitter className="w-5 h-5" />
@@ -113,8 +119,38 @@ function App() {
         {/* Hero Section */}
         <HeroSection />
 
+        {/* Stats Section */}
+        <div className="py-16 px-4 sm:px-6 lg:px-8 relative">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { number: '10K+', label: 'Resumes Analyzed', icon: '📊', color: 'from-cyan-500 to-blue-500' },
+                { number: '95%', label: 'User Satisfaction', icon: '⭐', color: 'from-blue-500 to-purple-500' },
+                { number: '2.5s', label: 'Average Analysis Time', icon: '⚡', color: 'from-purple-500 to-pink-500' },
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.2 }}
+                  className="relative group"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity`} />
+                  <div className="relative bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center hover:border-white/20 transition-all">
+                    <div className="text-4xl mb-3">{stat.icon}</div>
+                    <div className={`text-4xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
+                      {stat.number}
+                    </div>
+                    <p className="text-slate-400 font-medium">{stat.label}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Analyzer Section */}
-        <div className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-100 py-12">
+        <div className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12">
           <AnalyzerSection
             file={file}
             jobDescription={jobDescription}

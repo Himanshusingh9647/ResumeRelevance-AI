@@ -1,16 +1,28 @@
 import { motion } from 'framer-motion';
-import { Sparkles, FileSearch, Zap } from 'lucide-react';
+import { Sparkles, FileSearch, Zap, ArrowDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export function HeroSection() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
       {/* Animated Background Gradient Mesh */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950" />
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500 rounded-full blur-[128px] animate-float" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[128px] animate-float" style={{ animationDelay: '-3s' }} />
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-teal-500 rounded-full blur-[100px] animate-float" style={{ animationDelay: '-1.5s' }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-cyan-950 to-blue-950" />
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-[128px] animate-float" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[128px] animate-float" style={{ animationDelay: '-3s' }} />
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500 rounded-full blur-[100px] animate-float" style={{ animationDelay: '-1.5s' }} />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500 rounded-full blur-[120px] animate-float" style={{ animationDelay: '-2s' }} />
         </div>
         {/* Grid Pattern Overlay */}
         <div 
@@ -29,10 +41,12 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 bg-gradient-to-r from-cyan-500/20 to-pink-500/20 border border-cyan-400/50"
         >
-          <Sparkles className="w-4 h-4 text-indigo-400" />
-          <span className="text-sm font-medium text-indigo-200">AI-Powered Resume Analysis</span>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity }}>
+            <Sparkles className="w-4 h-4 text-cyan-300" />
+          </motion.div>
+          <span className="text-sm font-medium bg-gradient-to-r from-cyan-300 to-pink-300 bg-clip-text text-transparent">⚡ AI-Powered Resume Analysis</span>
         </motion.div>
 
         {/* Main Heading */}
@@ -40,15 +54,15 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+          className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight"
         >
           Optimize Your Resume for the{' '}
           <span className="relative">
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-teal-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-pink-400 bg-clip-text text-transparent animate-shimmer">
               Perfect Role
             </span>
             <motion.span
-              className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-teal-500 rounded-full"
+              className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500 rounded-full"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.8, delay: 0.5 }}
@@ -74,17 +88,22 @@ export function HeroSection() {
           className="flex flex-wrap items-center justify-center gap-4"
         >
           {[
-            { icon: FileSearch, text: 'Smart Skill Matching' },
-            { icon: Zap, text: 'Instant Analysis' },
-            { icon: Sparkles, text: 'AI Recommendations' },
+            { icon: FileSearch, text: 'Smart Skill Matching', color: 'from-cyan-400 to-blue-500' },
+            { icon: Zap, text: 'Instant Analysis', color: 'from-blue-400 to-purple-500' },
+            { icon: Sparkles, text: 'AI Recommendations', color: 'from-pink-400 to-rose-500' },
           ].map((feature, index) => (
-            <div
+            <motion.div
               key={index}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300"
+              whileHover={{ scale: 1.08, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 300 }}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/20 text-slate-300 cursor-pointer hover:border-white/40 backdrop-blur-sm group"
             >
-              <feature.icon className="w-4 h-4 text-indigo-400" />
-              <span className="text-sm font-medium">{feature.text}</span>
-            </div>
+              <div className={`bg-gradient-to-r ${feature.color} p-1.5 rounded-lg`}>
+                <feature.icon className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-semibold group-hover:text-white transition-colors">{feature.text}</span>
+            </motion.div>
           ))}
         </motion.div>
       </div>
@@ -92,17 +111,24 @@ export function HeroSection() {
       {/* Scroll Indicator */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        animate={{ opacity: isScrolled ? 0 : 1 }}
         transition={{ delay: 1, duration: 0.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden"
       >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2"
-        >
-          <motion.div className="w-1 h-2 bg-white/40 rounded-full" />
-        </motion.div>
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs text-slate-300 font-semibold tracking-widest uppercase">Scroll to explore</p>
+          <motion.div
+            animate={{ y: [0, 12, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="w-7 h-11 rounded-full border-2 border-cyan-400/50 flex items-start justify-center p-2 hover:border-cyan-400 transition-all cursor-pointer group"
+          >
+            <motion.div 
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-1.5 h-2.5 bg-gradient-to-b from-cyan-400 to-pink-400 rounded-full group-hover:shadow-lg group-hover:shadow-cyan-400/50" 
+            />
+          </motion.div>
+        </div>
       </motion.div>
     </section>
   );
