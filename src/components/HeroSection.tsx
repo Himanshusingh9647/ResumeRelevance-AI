@@ -106,6 +106,21 @@ export function HeroSection() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
+        >
+          <a
+            href="#analyzer"
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-pink-500 text-white font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all hover:-translate-y-0.5"
+          >
+            Start Free Analysis
+          </a>
+        </motion.div>
       </div>
 
       {/* Scroll Indicator */}

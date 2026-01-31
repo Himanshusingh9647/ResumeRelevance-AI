@@ -51,7 +51,7 @@ export function ResultsDashboard({ result }: ResultsDashboardProps) {
       {/* Score Section */}
       <motion.div
         variants={itemVariants}
-        className="glass-card rounded-2xl p-8 shadow-xl border border-slate-100"
+        className="glass-card gradient-border soft-shadow rounded-2xl p-8 border border-slate-100"
       >
         <div className="flex flex-col lg:flex-row items-center gap-8">
           {/* Circular Progress */}
@@ -98,7 +98,7 @@ export function ResultsDashboard({ result }: ResultsDashboardProps) {
         {/* Matched Skills */}
         <motion.div
           variants={itemVariants}
-          className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-shadow"
+          className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-1"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
@@ -133,7 +133,7 @@ export function ResultsDashboard({ result }: ResultsDashboardProps) {
         {/* Missing Skills */}
         <motion.div
           variants={itemVariants}
-          className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-shadow"
+          className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-1"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/20">
@@ -168,7 +168,7 @@ export function ResultsDashboard({ result }: ResultsDashboardProps) {
         {/* AI Advice */}
         <motion.div
           variants={itemVariants}
-          className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-shadow lg:col-span-1"
+          className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all hover:-translate-y-1 lg:col-span-1"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">

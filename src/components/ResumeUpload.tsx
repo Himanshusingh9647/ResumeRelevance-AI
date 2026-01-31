@@ -60,11 +60,11 @@ export function ResumeUpload({ onFileUpload, file }: ResumeUploadProps) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className={cn(
-              "relative h-[280px] rounded-xl border-2 border-dashed transition-all duration-300 cursor-pointer group",
-              "flex flex-col items-center justify-center",
+              "relative h-[280px] rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer group",
+              "flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm",
               isDragging
-                ? "border-indigo-500 bg-indigo-50/80 shadow-lg shadow-indigo-500/20"
-                : "border-slate-300 bg-slate-50/50 hover:border-indigo-400 hover:bg-indigo-50/30"
+                ? "border-indigo-500 bg-indigo-50/90 shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-400/30"
+                : "border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40"
             )}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -118,7 +118,7 @@ export function ResumeUpload({ onFileUpload, file }: ResumeUploadProps) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="h-[280px] rounded-xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 p-6 flex flex-col items-center justify-center relative overflow-hidden"
+            className="h-[280px] rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 p-6 flex flex-col items-center justify-center relative overflow-hidden"
           >
             {/* Success background pattern */}
             <div className="absolute inset-0 opacity-5">

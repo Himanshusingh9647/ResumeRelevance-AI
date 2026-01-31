@@ -78,18 +78,20 @@ function App() {
   }, []);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 relative">
+    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative">
       {/* Animated Background Elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full blur-3xl opacity-10 animate-float" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500 rounded-full blur-3xl opacity-10 animate-float" style={{ animationDelay: '-2s' }} />
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none aurora-bg">
+        <div className="absolute top-0 right-0 w-[32rem] h-[32rem] bg-cyan-400 rounded-full blur-[140px] opacity-15 animate-float" />
+        <div className="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-pink-500 rounded-full blur-[140px] opacity-15 animate-float" style={{ animationDelay: '-2s' }} />
+        <div className="absolute -top-24 left-1/3 w-[20rem] h-[20rem] bg-indigo-500 rounded-full blur-[120px] opacity-10 animate-float" style={{ animationDelay: '-1s' }} />
+        <div className="noise-overlay" />
       </div>
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-cyan-400/20 bg-slate-900/80 backdrop-blur-xl">
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-dark border-b border-white/10 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-blue-500 to-pink-500 flex items-center justify-center shadow-lg shadow-cyan-400/30">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-blue-500 to-pink-500 flex items-center justify-center shadow-lg shadow-cyan-400/30 ring-1 ring-white/10">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-white">ResumeRelevance<span className="bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">AI</span></span>

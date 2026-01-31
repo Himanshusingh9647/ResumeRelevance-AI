@@ -78,7 +78,7 @@ export function CircularProgress({
         style={{ width: size * 0.8, height: size * 0.8 }}
       />
 
-      <svg width={size} height={size} className="transform -rotate-90">
+      <svg width={size} height={size} className="transform -rotate-90 drop-shadow-lg">
         <defs>
           <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={colors.from} />

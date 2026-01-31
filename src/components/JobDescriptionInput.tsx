@@ -64,14 +64,14 @@ export function JobDescriptionInput({ value, onChange }: JobDescriptionInputProp
               : '0 1px 3px rgba(0, 0, 0, 0.1)'
           }}
           className={cn(
-            "h-[280px] rounded-xl border-2 transition-colors overflow-hidden",
+            "h-[280px] rounded-2xl border-2 transition-colors overflow-hidden bg-white/80 backdrop-blur-sm",
             isFocused
-              ? "border-indigo-400 bg-white"
-              : "border-slate-200 bg-slate-50/50 hover:border-slate-300"
+              ? "border-indigo-400"
+              : "border-slate-200 hover:border-slate-300"
           )}
         >
           {/* Code editor style header */}
-          <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50/80">
+          <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-100 bg-slate-50/90">
             <div className="w-2.5 h-2.5 rounded-full bg-red-400/60" />
             <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/60" />
             <div className="w-2.5 h-2.5 rounded-full bg-green-400/60" />
@@ -81,7 +81,7 @@ export function JobDescriptionInput({ value, onChange }: JobDescriptionInputProp
           {/* Textarea */}
           <div className="relative h-[calc(100%-36px)]">
             {/* Line numbers */}
-            <div className="absolute left-0 top-0 bottom-0 w-10 bg-slate-50/80 border-r border-slate-100 overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-10 bg-slate-50/90 border-r border-slate-100 overflow-hidden">
               <div className="flex flex-col items-end pr-2 pt-3 text-xs text-slate-300 font-mono leading-6">
                 {Array.from({ length: 15 }, (_, i) => (
                   <span key={i}>{i + 1}</span>
