@@ -11,4 +11,7 @@ export const serverConfig = {
   dataDirectoryPath: path.join(projectRootPath, '.resume-data'),
   vectorIndexPath: path.join(projectRootPath, '.resume-data', 'vectra', 'resume-analysis'),
   maxUploadSizeBytes: 10 * 1024 * 1024,
+  embeddingDimensions: 256,
+  chunkSizeWords: 120,
+  chunkOverlapWords: 30,
 };

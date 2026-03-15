@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { mkdir } from 'node:fs/promises';
+import { analyzeResume } from './resumeAnalysis.js';
 import { serverConfig } from './config.js';
 
 const upload = multer({
@@ -22,28 +23,45 @@ app.get('/api/health', async (_request, response) => {
   response.json({
     status: 'ok',
     vectorStore: 'vectra',
-    mode: 'scaffold',
+    mode: 'vector-analysis',
   });
 });
 
 app.post('/api/analyze', upload.single('resume'), async (request, response) => {
-  const jobDescription = typeof request.body.jobDescription === 'string'
-    ? request.body.jobDescription.trim()
-    : '';
+  try {
+    const jobDescription = typeof request.body.jobDescription === 'string'
+      ? request.body.jobDescription.trim()
+      : '';
 
-  if (!request.file) {
-    response.status(400).json({ message: 'Resume PDF is required.' });
-    return;
+    if (!request.file) {
+      response.status(400).json({ message: 'Resume PDF is required.' });
+      return;
+    }
+
+    if (request.file.mimetype !== 'application/pdf') {
+      response.status(400).json({ message: 'Only PDF resumes are supported right now.' });
+      return;
+    }
+
+    if (!jobDescription) {
+      response.status(400).json({ message: 'Job description is required.' });
+      return;
+    }
+
+    const analysisResult = await analyzeResume({
+      resumeBuffer: request.file.buffer,
+      jobDescription,
+      fileName: request.file.originalname,
+    });
+
+    response.json(analysisResult);
+  } catch (error) {
+    console.error('Resume analysis failed.', error);
+
+    response.status(500).json({
+      message: error instanceof Error ? error.message : 'Resume analysis failed.',
+    });
   }
-
-  if (!jobDescription) {
-    response.status(400).json({ message: 'Job description is required.' });
-    return;
-  }
-
-  response.status(501).json({
-    message: 'Backend scaffold is ready. Vector analysis will be added in the next step.',
-  });
 });
 
 app.listen(serverConfig.port, () => {
