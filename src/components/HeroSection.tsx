@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles, FileSearch, Zap, ArrowDown } from 'lucide-react';
+import { Sparkles, FileSearch, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export function HeroSection() {

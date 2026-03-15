@@ -8,6 +8,7 @@ interface AnalyzerSectionProps {
   file: File | null;
   jobDescription: string;
   isLoading: boolean;
+  errorMessage?: string | null;
   onFileUpload: (file: File | null) => void;
   onJobDescriptionChange: (value: string) => void;
   onAnalyze: () => void;
@@ -17,6 +18,7 @@ export function AnalyzerSection({
   file,
   jobDescription,
   isLoading,
+  errorMessage,
   onFileUpload,
   onJobDescriptionChange,
   onAnalyze,
@@ -66,6 +68,12 @@ export function AnalyzerSection({
                 transition={{ delay: 0.3 }}
                 className="mt-8"
               >
+                {errorMessage ? (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {errorMessage}
+                  </div>
+                ) : null}
+
                 <button
                   onClick={onAnalyze}
                   disabled={!canAnalyze || isLoading}

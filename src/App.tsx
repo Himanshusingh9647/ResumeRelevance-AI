@@ -1,58 +1,15 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Github, Twitter, Sparkles } from 'lucide-react';
 import { HeroSection, AnalyzerSection, ResultsDashboard } from './components';
 import type { AnalysisResult } from './types';
-
-// Simulated AI analysis - in production, this would call your backend API
-const simulateAnalysis = async (file: File, jobDescription: string): Promise<AnalysisResult> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 2500));
-
-  // Extract some keywords from job description for demo purposes
-  const jdLower = jobDescription.toLowerCase();
-  
-  // Common tech skills to check for
-  const allSkills = [
-    'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Docker',
-    'Kubernetes', 'AWS', 'Azure', 'GCP', 'CI/CD', 'Git', 'REST API',
-    'GraphQL', 'MongoDB', 'PostgreSQL', 'Redis', 'Agile', 'Scrum',
-    'TDD', 'Microservices', 'System Design', 'Leadership', 'Communication'
-  ];
-
-  // Randomly determine which skills are "matched" and which are "missing"
-  // In a real app, this would be done by your AI/ML backend
-  const shuffled = [...allSkills].sort(() => Math.random() - 0.5);
-  const matchedCount = Math.floor(Math.random() * 8) + 5; // 5-12 matched skills
-  const missingCount = Math.floor(Math.random() * 5) + 2; // 2-6 missing skills
-  
-  const matchedSkills = shuffled.slice(0, matchedCount);
-  const missingSkills = shuffled.slice(matchedCount, matchedCount + missingCount);
-  
-  // Calculate score based on matched vs total
-  const totalSkillsInJD = matchedCount + missingCount;
-  const matchScore = Math.round((matchedCount / totalSkillsInJD) * 100);
-  
-  // Generate contextual AI advice
-  const adviceOptions = [
-    `Your resume shows strong alignment with ${matchedCount} key requirements. To improve your match score, consider adding specific examples of ${missingSkills.slice(0, 2).join(' and ')} experience. Quantify your achievements where possible.`,
-    `Great foundation! Focus on highlighting your ${matchedSkills.slice(0, 2).join(' and ')} experience more prominently. Add keywords like "${missingSkills[0]}" to your skills section to pass ATS filters.`,
-    `You're ${matchScore}% aligned with this role. The job emphasizes ${missingSkills[0]} - consider adding a project or certification that demonstrates this skill. Your ${matchedSkills[0]} experience is a strong point.`,
-  ];
-  
-  return {
-    matchScore,
-    matchedSkills,
-    missingSkills,
-    aiAdvice: adviceOptions[Math.floor(Math.random() * adviceOptions.length)],
-  };
-};
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleAnalyze = useCallback(async () => {
@@ -60,12 +17,28 @@ function App() {
 
     setIsLoading(true);
     setResult(null);
+    setErrorMessage(null);
 
     try {
-      const analysisResult = await simulateAnalysis(file, jobDescription);
+      const formData = new FormData();
+      formData.append('resume', file);
+      formData.append('jobDescription', jobDescription);
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({ message: 'Unable to analyze the resume.' }));
+        throw new Error(errorPayload.message ?? 'Unable to analyze the resume.');
+      }
+
+      const analysisResult: AnalysisResult = await response.json();
       setResult(analysisResult);
     } catch (error) {
       console.error('Analysis failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Analysis failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -75,6 +48,7 @@ function App() {
     setFile(null);
     setJobDescription('');
     setResult(null);
+    setErrorMessage(null);
   }, []);
 
   return (
@@ -157,6 +131,7 @@ function App() {
             file={file}
             jobDescription={jobDescription}
             isLoading={isLoading}
+            errorMessage={errorMessage}
             onFileUpload={setFile}
             onJobDescriptionChange={setJobDescription}
             onAnalyze={handleAnalyze}
