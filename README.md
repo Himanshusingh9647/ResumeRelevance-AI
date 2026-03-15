@@ -1,73 +1,111 @@
-# React + TypeScript + Vite
+# ResumeRelevance AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ResumeRelevance AI compares an uploaded resume against a job description and returns:
 
-Currently, two official plugins are available:
+- `matchScore`
+- `matchedSkills`
+- `missingSkills`
+- `aiAdvice`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The project is now in backend phase with a free local vector database.
 
-## React Compiler
+## Architecture
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Frontend: React + Vite + TypeScript
+- Backend: Express + TypeScript
+- Vector DB: `vectra` (local, file-based)
+- Resume parser: `pdf-parse`
+- Embeddings: deterministic local embedding function (no paid API)
 
-## Expanding the ESLint configuration
+Vector data is persisted under `.resume-data/` and ignored from git.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Why This Vector DB
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+`vectra` is free and local. It gives a Pinecone-like query interface, but stores everything on disk so there is no hosted dependency, no API key, and no cost to run.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Run Locally
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Install:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run client + server together:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Backend only:
+
+```bash
+npm run dev:server
+```
+
+Build both:
+
+```bash
+npm run build
+```
+
+Start compiled server:
+
+```bash
+npm run start:server
+```
+
+## API
+
+### Health
+
+`GET /api/health`
+
+Response example:
+
+```json
+{
+  "status": "ok",
+  "vectorStore": "vectra",
+  "mode": "vector-analysis"
+}
+```
+
+### Analyze Resume
+
+`POST /api/analyze`
+
+`multipart/form-data` fields:
+
+- `resume`: PDF file
+- `jobDescription`: string
+
+Response example:
+
+```json
+{
+  "matchScore": 74,
+  "matchedSkills": ["React", "TypeScript", "Node.js"],
+  "missingSkills": ["Docker", "AWS"],
+  "aiAdvice": "Your resume already aligns well on React, TypeScript, Node.js..."
+}
+```
+
+## Backend Notes
+
+- The server currently supports PDF resume uploads.
+- The index is reused across requests and filtered per analysis ID.
+- If a PDF has very little extractable text, the API returns a validation error.
+
+## Commit Workflow
+
+You asked for commit history after each milestone. This backend phase was committed in steps:
+
+1. `feat: scaffold backend api`
+2. `feat: implement local vectra analysis service`
+3. `feat: connect frontend analyzer to backend api`
+4. `docs: update readme for backend phase`
+
+## Known Environment Note
+
+Vite warns that Node 20.19+ is recommended. The project still builds on 20.17 in this workspace, but upgrading Node is recommended for full compatibility.
