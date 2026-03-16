@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Github, Twitter, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { HeroSection, AnalyzerSection, ResultsDashboard } from './components';
 import type { AnalysisResult } from './types';
 
@@ -52,38 +52,32 @@ function App() {
   }, []);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none aurora-bg">
-        <div className="absolute top-0 right-0 w-[32rem] h-[32rem] bg-cyan-400 rounded-full blur-[140px] opacity-15 animate-float" />
-        <div className="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-pink-500 rounded-full blur-[140px] opacity-15 animate-float" style={{ animationDelay: '-2s' }} />
-        <div className="absolute -top-24 left-1/3 w-[20rem] h-[20rem] bg-indigo-500 rounded-full blur-[120px] opacity-10 animate-float" style={{ animationDelay: '-1s' }} />
-        <div className="noise-overlay" />
-      </div>
+    <div ref={containerRef} className="min-h-screen bg-white text-slate-900 relative">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-dark border-b border-white/10 backdrop-blur-xl">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-blue-500 to-pink-500 flex items-center justify-center shadow-lg shadow-cyan-400/30 ring-1 ring-white/10">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-bold text-white">ResumeRelevance<span className="bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">AI</span></span>
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold tracking-tight">ResumeRelevance</span>
+              <span className="hidden sm:inline text-sm text-slate-500">AI</span>
             </div>
-            <div className="flex items-center gap-4">
+
+            <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
+              <a href="#" className="hover:text-slate-900 transition">Design</a>
+              <a href="#" className="hover:text-slate-900 transition">Photos</a>
+              <a href="#" className="hover:text-slate-900 transition">About</a>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 border border-slate-200 rounded-full px-3 py-1">
+                <span className="font-semibold">FR</span>
+                <span className="font-semibold">EN</span>
+              </div>
               <a
-                href="#"
-                className="text-slate-400 hover:text-cyan-400 transition-colors"
-                aria-label="GitHub"
+                href="mailto:hello@resume.relevance"
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50 transition"
               >
-                <Github className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-slate-400 hover:text-cyan-400 transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-5 h-5" />
+                hello@resume.relevance
               </a>
             </div>
           </div>
@@ -91,7 +85,7 @@ function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="pt-16">
+      <main className="pt-20">
         {/* Hero Section */}
         <HeroSection />
 
@@ -112,12 +106,12 @@ function App() {
                   className="relative group"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity`} />
-                  <div className="relative bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center hover:border-white/20 transition-all">
+                  <div className="relative bg-white shadow-sm border border-slate-200 rounded-2xl p-8 text-center hover:shadow-md transition-all">
                     <div className="text-4xl mb-3">{stat.icon}</div>
                     <div className={`text-4xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
                       {stat.number}
                     </div>
-                    <p className="text-slate-400 font-medium">{stat.label}</p>
+                    <p className="text-slate-600 font-medium">{stat.label}</p>
                   </div>
                 </motion.div>
               ))}
@@ -126,7 +120,7 @@ function App() {
         </div>
 
         {/* Analyzer Section */}
-        <div className="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12">
+        <div className="bg-slate-50 py-12">
           <AnalyzerSection
             file={file}
             jobDescription={jobDescription}
@@ -167,17 +161,17 @@ function App() {
         </AnimatePresence>
 
         {/* Footer */}
-        <footer className={`${result ? 'bg-slate-100' : 'bg-slate-900'} py-12 border-t ${result ? 'border-slate-200' : 'border-white/10'}`}>
+        <footer className={`${result ? 'bg-slate-50' : 'bg-white'} py-12 border-t ${result ? 'border-slate-200' : 'border-slate-200'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <Sparkles className="w-3 h-3 text-white" />
               </div>
-              <span className={`font-semibold ${result ? 'text-slate-700' : 'text-white'}`}>
+              <span className={`font-semibold ${result ? 'text-slate-700' : 'text-slate-900'}`}>
                 ResumeRelevance<span className="text-indigo-500">AI</span>
               </span>
             </div>
-            <p className={`text-sm ${result ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-sm ${result ? 'text-slate-500' : 'text-slate-600'}`}>
               Powered by advanced AI to help you land your dream job.
             </p>
             <p className={`text-xs ${result ? 'text-slate-400' : 'text-slate-500'} mt-4`}>

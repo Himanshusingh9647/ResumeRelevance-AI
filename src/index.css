@@ -152,11 +152,18 @@ html {
   -webkit-backdrop-filter: blur(20px);
 }
 
+/* Outline-style heading (like a bold stencil) */
+.outline-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(15, 23, 42, 0.86);
+  text-shadow: 0 0 1px rgba(15, 23, 42, 0.3);
+}
+
 /* App surface defaults */
 body {
   font-family: var(--font-sans);
-  background-color: #0b1220;
-  color: #e2e8f0;
+  background-color: #ffffff;
+  color: #0f172a;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
