@@ -6,8 +6,10 @@ ResumeRelevance AI compares an uploaded resume against a job description and ret
 - `matchedSkills`
 - `missingSkills`
 - `aiAdvice`
+- `recommendations` (paste-ready improvement lines)
+- `resumeText` (extracted text for live editing)
 
-The project is now in backend phase with a free local vector database.
+The project uses a free local vector database and optional Grok AI recommendations.
 
 ## Architecture
 
@@ -30,6 +32,14 @@ Install:
 ```bash
 npm install
 ```
+
+Configure environment variables:
+
+```bash
+cp .env.example .env
+```
+
+Set `GROK_API_KEY` in `.env`.
 
 Run client + server together:
 
@@ -87,7 +97,12 @@ Response example:
   "matchScore": 74,
   "matchedSkills": ["React", "TypeScript", "Node.js"],
   "missingSkills": ["Docker", "AWS"],
-  "aiAdvice": "Your resume already aligns well on React, TypeScript, Node.js..."
+  "aiAdvice": "Your resume already aligns well on React, TypeScript, Node.js...",
+  "recommendations": [
+    "Add a bullet showing Docker usage with deployment outcomes.",
+    "Highlight AWS services used in production projects."
+  ],
+  "resumeText": "... extracted resume text ..."
 }
 ```
 
@@ -96,6 +111,7 @@ Response example:
 - The server currently supports PDF resume uploads.
 - The index is reused across requests and filtered per analysis ID.
 - If a PDF has very little extractable text, the API returns a validation error.
+- The frontend includes a live editor where recommendation snippets can be inserted and downloaded as an updated PDF resume draft.
 
 ## Commit Workflow
 

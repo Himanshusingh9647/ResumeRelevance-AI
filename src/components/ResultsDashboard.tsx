@@ -1,11 +1,15 @@
 import { motion, type Variants } from 'framer-motion';
-import { CheckCircle2, XCircle, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, Sparkles, TrendingUp, AlertTriangle, Wand2, Download } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { cn } from '../lib/utils';
 import type { AnalysisResult } from '../types';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
+  editedResumeText: string;
+  onEditedResumeTextChange: (value: string) => void;
+  onApplyRecommendation: (recommendation: string) => void;
+  onDownloadUpdatedResume: () => void;
 }
 
 const containerVariants: Variants = {
@@ -28,8 +32,14 @@ const itemVariants: Variants = {
   },
 };
 
-export function ResultsDashboard({ result }: ResultsDashboardProps) {
-  const { matchScore, matchedSkills, missingSkills, aiAdvice } = result;
+export function ResultsDashboard({
+  result,
+  editedResumeText,
+  onEditedResumeTextChange,
+  onApplyRecommendation,
+  onDownloadUpdatedResume,
+}: ResultsDashboardProps) {
+  const { matchScore, matchedSkills, missingSkills, aiAdvice, recommendations } = result;
   
   const getScoreLabel = () => {
     if (matchScore >= 85) return { text: 'Excellent Match!', color: 'text-teal-600' };
@@ -196,6 +206,71 @@ export function ResultsDashboard({ result }: ResultsDashboardProps) {
           </div>
         </motion.div>
       </div>
+
+      {/* Recommendation Actions */}
+      <motion.div
+        variants={itemVariants}
+        className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <Wand2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800">Apply Recommendations</h3>
+            <p className="text-xs text-slate-500">Click to insert into your editable resume</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {recommendations.length > 0 ? (
+            recommendations.map((recommendation, index) => (
+              <button
+                key={`${recommendation}-${index}`}
+                onClick={() => onApplyRecommendation(recommendation)}
+                className="text-left rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/40 transition"
+              >
+                <span className="font-semibold text-indigo-600">+ Add:</span> {recommendation}
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500">No recommendation snippets were generated for this run.</p>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Live Resume Editor */}
+      <motion.div
+        variants={itemVariants}
+        className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div>
+            <h3 className="font-semibold text-slate-800">Live Resume Editor</h3>
+            <p className="text-xs text-slate-500">Edit in real time, then download your updated resume text</p>
+          </div>
+          <button
+            onClick={onDownloadUpdatedResume}
+            disabled={!editedResumeText.trim()}
+            className={cn(
+              'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition',
+              editedResumeText.trim()
+                ? 'bg-slate-900 text-white hover:bg-slate-700'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed',
+            )}
+          >
+            <Download className="w-4 h-4" />
+            Download Updated Resume
+          </button>
+        </div>
+
+        <textarea
+          value={editedResumeText}
+          onChange={(event) => onEditedResumeTextChange(event.target.value)}
+          className="w-full min-h-[320px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/15 focus:border-indigo-400"
+          placeholder="Your extracted resume text will appear here after analysis..."
+        />
+      </motion.div>
     </motion.div>
   );
 }

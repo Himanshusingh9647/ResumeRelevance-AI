@@ -15,6 +15,8 @@ interface AnalysisResult {
   matchedSkills: string[];
   missingSkills: string[];
   aiAdvice: string;
+  recommendations: string[];
+  resumeText: string;
 }
 
 interface ResumeChunkMetadata extends Record<string, string | number | boolean> {
@@ -132,6 +134,12 @@ export async function analyzeResume({ resumeBuffer, jobDescription, fileName }: 
       },
     );
 
+    logChunkMatches({
+      analysisId,
+      jobChunk: chunk,
+      results,
+    });
+
     return results;
   }));
 
@@ -151,23 +159,49 @@ export async function analyzeResume({ resumeBuffer, jobDescription, fileName }: 
   const weightedScore = (skillCoverage * 0.55) + (averageRetrievalScore * 0.3) + (keywordCoverage * 0.15);
   const matchScore = Math.max(12, Math.min(98, Math.round(weightedScore * 100)));
 
+  logAnalysisSummary({
+    analysisId,
+    fileName,
+    resumeChunkCount: resumeChunks.length,
+    jobChunkCount: jobChunks.length,
+    averageRetrievalScore,
+    skillCoverage,
+    keywordCoverage,
+    matchScore,
+    matchedSkillsCount: matchedSkills.length,
+    missingSkillsCount: missingSkills.length,
+  });
+
   const strongestEvidence = flattenedMatches
     .sort((left, right) => right.score - left.score)
     .slice(0, 2)
     .map((result) => result.item.metadata.textPreview)
     .filter(Boolean);
 
+  const fallbackAdvice = buildAdvice({
+    matchScore,
+    matchedSkills,
+    missingSkills,
+    strongestEvidence,
+    keywordCoverage,
+  });
+
+  const aiOutput = await generateRecommendationsWithGrok({
+    resumeText: normalizedResumeText,
+    jobDescription: normalizedJobDescription,
+    matchScore,
+    matchedSkills,
+    missingSkills,
+    fallbackAdvice,
+  });
+
   return {
     matchScore,
     matchedSkills,
     missingSkills,
-    aiAdvice: buildAdvice({
-      matchScore,
-      matchedSkills,
-      missingSkills,
-      strongestEvidence,
-      keywordCoverage,
-    }),
+    aiAdvice: aiOutput.aiAdvice,
+    recommendations: aiOutput.recommendations,
+    resumeText: normalizedResumeText,
   };
 }
 
@@ -332,6 +366,81 @@ function clampScore(score: number) {
   return Math.max(0, Math.min(1, score));
 }
 
+function logChunkMatches(input: {
+  analysisId: string;
+  jobChunk: TextChunk;
+  results: Awaited<ReturnType<typeof vectorIndex.queryItems>>;
+}) {
+  if (!serverConfig.vectorDebugLogging) {
+    return;
+  }
+
+  const jobPreview = sanitizePreview(input.jobChunk.text, 130);
+  console.log(`\n[VectorDB] Analysis ${input.analysisId}`);
+  console.log(`[VectorDB] JD chunk #${input.jobChunk.index}: "${jobPreview}"`);
+
+  if (input.results.length === 0) {
+    console.log('[VectorDB] No resume chunks retrieved for this query.');
+    return;
+  }
+
+  for (const [rankIndex, result] of input.results.entries()) {
+    const similarity = clampScore(result.score);
+    const distance = 1 - similarity;
+    const resumePreview = sanitizePreview(result.item.metadata.textPreview, 130);
+    const overlap = summarizeTokenOverlap(input.jobChunk.text, result.item.metadata.textPreview);
+
+    console.log(
+      `[VectorDB] #${rankIndex + 1} resume chunk ${result.item.metadata.chunkIndex} | similarity=${similarity.toFixed(4)} | distance=${distance.toFixed(4)} | overlap=${overlap}`,
+    );
+    console.log(`[VectorDB]    resume: "${resumePreview}"`);
+  }
+}
+
+function logAnalysisSummary(input: {
+  analysisId: string;
+  fileName: string;
+  resumeChunkCount: number;
+  jobChunkCount: number;
+  averageRetrievalScore: number;
+  skillCoverage: number;
+  keywordCoverage: number;
+  matchScore: number;
+  matchedSkillsCount: number;
+  missingSkillsCount: number;
+}) {
+  if (!serverConfig.vectorDebugLogging) {
+    return;
+  }
+
+  const retrievalDistance = 1 - clampScore(input.averageRetrievalScore);
+
+  console.log('\n[VectorDB] Analysis summary');
+  console.log(`[VectorDB] analysisId=${input.analysisId} file=${input.fileName}`);
+  console.log(`[VectorDB] chunks resume=${input.resumeChunkCount} jobDescription=${input.jobChunkCount}`);
+  console.log(
+    `[VectorDB] avgSimilarity=${clampScore(input.averageRetrievalScore).toFixed(4)} avgDistance=${retrievalDistance.toFixed(4)} skillCoverage=${input.skillCoverage.toFixed(4)} keywordCoverage=${input.keywordCoverage.toFixed(4)}`,
+  );
+  console.log(
+    `[VectorDB] matchedSkills=${input.matchedSkillsCount} missingSkills=${input.missingSkillsCount} finalMatchScore=${input.matchScore}`,
+  );
+}
+
+function sanitizePreview(text: string, maxLength: number) {
+  return normalizeWhitespace(text).slice(0, maxLength);
+}
+
+function summarizeTokenOverlap(jobText: string, resumeText: string) {
+  const resumeTokens = new Set(tokenize(resumeText));
+  const overlap = [...new Set(tokenize(jobText).filter((token) => resumeTokens.has(token)))];
+
+  if (overlap.length === 0) {
+    return 'none';
+  }
+
+  return overlap.slice(0, 6).join(', ');
+}
+
 function buildAdvice(input: {
   matchScore: number;
   matchedSkills: string[];
@@ -362,4 +471,151 @@ function buildAdvice(input: {
   }
 
   return adviceParts.join(' ');
+}
+
+async function generateRecommendationsWithGrok(input: {
+  resumeText: string;
+  jobDescription: string;
+  matchScore: number;
+  matchedSkills: string[];
+  missingSkills: string[];
+  fallbackAdvice: string;
+}) {
+  if (!serverConfig.grokApiKey) {
+    return {
+      aiAdvice: input.fallbackAdvice,
+      recommendations: buildFallbackRecommendations(input.missingSkills),
+    };
+  }
+
+  const prompt = [
+    'You are an expert resume coach.',
+    'Return JSON only with the shape:',
+    '{"aiAdvice":"string", "recommendations":["string", "string", "string", "string", "string"]}',
+    'Rules:',
+    '- Give concise, specific, role-focused recommendations.',
+    '- Recommendations must be 1 sentence each and ready to paste into a resume.',
+    '- Do not invent fake achievements or numbers.',
+    '- Use action verbs and professional style.',
+    '- Recommendations should be grounded in missing or weak alignment areas.',
+    '',
+    `Current match score: ${input.matchScore}`,
+    `Matched skills: ${input.matchedSkills.join(', ') || 'None'}`,
+    `Missing skills: ${input.missingSkills.join(', ') || 'None identified'}`,
+    '',
+    'Resume text:',
+    input.resumeText.slice(0, 5000),
+    '',
+    'Job description:',
+    input.jobDescription.slice(0, 5000),
+  ].join('\n');
+
+  try {
+    const response = await fetch(`${serverConfig.grokBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serverConfig.grokApiKey}`,
+      },
+      body: JSON.stringify({
+        model: serverConfig.grokModel,
+        temperature: 0.25,
+        messages: [
+          {
+            role: 'system',
+            content: 'You produce strict JSON output only.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Grok request failed with status ${response.status}`);
+    }
+
+    const payload = await response.json() as {
+      choices?: Array<{
+        message?: {
+          content?: string;
+        };
+      }>;
+    };
+
+    const rawContent = payload.choices?.[0]?.message?.content ?? '';
+    const parsed = parseJsonPayload(rawContent);
+
+    if (!parsed) {
+      throw new Error('Could not parse JSON recommendations from Grok response.');
+    }
+
+    const aiAdvice = typeof parsed.aiAdvice === 'string' && parsed.aiAdvice.trim().length > 0
+      ? parsed.aiAdvice.trim()
+      : input.fallbackAdvice;
+
+    const recommendations = Array.isArray(parsed.recommendations)
+      ? parsed.recommendations
+        .filter((entry): entry is string => typeof entry === 'string')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)
+        .slice(0, 7)
+      : [];
+
+    return {
+      aiAdvice,
+      recommendations: recommendations.length > 0 ? recommendations : buildFallbackRecommendations(input.missingSkills),
+    };
+  } catch (error) {
+    console.error('Grok recommendation generation failed. Falling back to local advice.', error);
+
+    return {
+      aiAdvice: input.fallbackAdvice,
+      recommendations: buildFallbackRecommendations(input.missingSkills),
+    };
+  }
+}
+
+function parseJsonPayload(content: string): { aiAdvice?: unknown; recommendations?: unknown } | null {
+  const direct = safeJsonParse(content);
+
+  if (direct) {
+    return direct;
+  }
+
+  const fencedMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+
+  if (fencedMatch?.[1]) {
+    return safeJsonParse(fencedMatch[1]);
+  }
+
+  return null;
+}
+
+function safeJsonParse(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+
+    if (parsed && typeof parsed === 'object') {
+      return parsed as { aiAdvice?: unknown; recommendations?: unknown };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function buildFallbackRecommendations(missingSkills: string[]) {
+  const prioritized = missingSkills.slice(0, 4);
+
+  const recommendations = prioritized.map((skill) =>
+    `Add a bullet highlighting hands-on ${skill} experience, including project scope, your contribution, and a measurable outcome where possible.`,
+  );
+
+  recommendations.push('Strengthen your summary with 2-3 role-specific keywords from the job description and align them with your strongest recent achievements.');
+
+  return recommendations.slice(0, 6);
 }

@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { HeroSection, AnalyzerSection, ResultsDashboard } from './components';
 import type { AnalysisResult } from './types';
 
@@ -9,6 +10,7 @@ function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [editedResumeText, setEditedResumeText] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +38,7 @@ function App() {
 
       const analysisResult: AnalysisResult = await response.json();
       setResult(analysisResult);
+      setEditedResumeText(analysisResult.resumeText);
     } catch (error) {
       console.error('Analysis failed:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Analysis failed. Please try again.');
@@ -48,8 +51,67 @@ function App() {
     setFile(null);
     setJobDescription('');
     setResult(null);
+    setEditedResumeText('');
     setErrorMessage(null);
   }, []);
+
+  const handleApplyRecommendation = useCallback((recommendation: string) => {
+    setEditedResumeText((currentText) => {
+      const trimmedCurrent = currentText.trimEnd();
+
+      if (!trimmedCurrent) {
+        return recommendation;
+      }
+
+      if (trimmedCurrent.toLowerCase().includes(recommendation.toLowerCase())) {
+        return currentText;
+      }
+
+      return `${trimmedCurrent}\n- ${recommendation}`;
+    });
+  }, []);
+
+  const handleDownloadUpdatedResume = useCallback(() => {
+    if (!editedResumeText.trim()) {
+      return;
+    }
+
+    const baseName = file?.name?.replace(/\.pdf$/i, '') ?? 'updated-resume';
+    const documentPdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+    });
+
+    const marginLeft = 48;
+    const marginTop = 56;
+    const pageWidth = documentPdf.internal.pageSize.getWidth();
+    const pageHeight = documentPdf.internal.pageSize.getHeight();
+    const maxTextWidth = pageWidth - (marginLeft * 2);
+    const lineHeight = 18;
+
+    documentPdf.setFont('helvetica', 'normal');
+    documentPdf.setFontSize(11);
+
+    let cursorY = marginTop;
+
+    for (const paragraph of editedResumeText.split('\n')) {
+      const safeLine = paragraph.trim().length === 0 ? ' ' : paragraph;
+      const wrappedLines = documentPdf.splitTextToSize(safeLine, maxTextWidth) as string[];
+
+      for (const wrappedLine of wrappedLines) {
+        if (cursorY > pageHeight - marginTop) {
+          documentPdf.addPage();
+          cursorY = marginTop;
+        }
+
+        documentPdf.text(wrappedLine, marginLeft, cursorY);
+        cursorY += lineHeight;
+      }
+    }
+
+    documentPdf.save(`${baseName}-updated.pdf`);
+  }, [editedResumeText, file]);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-white text-slate-900 relative">
@@ -154,7 +216,13 @@ function App() {
                     Start New Analysis
                   </button>
                 </div>
-                <ResultsDashboard result={result} />
+                <ResultsDashboard
+                  result={result}
+                  editedResumeText={editedResumeText}
+                  onEditedResumeTextChange={setEditedResumeText}
+                  onApplyRecommendation={handleApplyRecommendation}
+                  onDownloadUpdatedResume={handleDownloadUpdatedResume}
+                />
               </div>
             </motion.section>
           )}

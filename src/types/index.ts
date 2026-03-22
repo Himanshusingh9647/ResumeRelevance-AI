@@ -3,6 +3,8 @@ export interface AnalysisResult {
   matchedSkills: string[];
   missingSkills: string[];
   aiAdvice: string;
+  recommendations: string[];
+  resumeText: string;
 }
 
 export interface FileUploadState {
