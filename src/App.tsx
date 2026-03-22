@@ -339,7 +339,7 @@ function App() {
 
             <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
               <a href="#photos" className="hover:text-slate-900 transition">Photos</a>
-              <a href="#" className="hover:text-slate-900 transition">About</a>
+              <a href="#about" className="hover:text-slate-900 transition">About</a>
             </div>
 
             <div className="flex items-center gap-3">
@@ -494,6 +494,68 @@ function App() {
             </motion.section>
           )}
         </AnimatePresence>
+
+        {/* About Section */}
+        <section id="about" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">About ResumeRelevance AI</h2>
+              <p className="text-lg text-slate-600">
+                Empowering job seekers with AI-driven resume analysis and optimization.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12"
+            >
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition">
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">Our Mission</h3>
+                <p className="text-slate-600">
+                  To transform the job application process by leveraging advanced AI technology to help candidates create resumes that not only showcase their strengths but also align perfectly with job requirements.
+                </p>
+              </div>
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition">
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">How It Works</h3>
+                <p className="text-slate-600">
+                  Our AI analyzes your resume against job descriptions, identifying skill gaps and providing actionable recommendations to improve your match score and increase your chances of landing interviews.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-8 border border-indigo-200"
+            >
+              <h3 className="text-2xl font-bold text-slate-900 mb-6 text-center">Meet the Team</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-slate-200">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold mb-3">
+                    HB
+                  </div>
+                  <h4 className="text-lg font-semibold text-slate-900">Harshil Bhardwaj</h4>
+                  <p className="text-sm text-slate-600 mt-1">Co-Founder & Developer</p>
+                </div>
+                <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-slate-200">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-2xl font-bold mb-3">
+                    HS
+                  </div>
+                  <h4 className="text-lg font-semibold text-slate-900">Himanshu Singh</h4>
+                  <p className="text-sm text-slate-600 mt-1">Co-Founder & AI Specialist</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
         {/* Footer */}
         <footer className={`${result ? 'bg-slate-50' : 'bg-white'} py-12 border-t ${result ? 'border-slate-200' : 'border-slate-200'}`}>
