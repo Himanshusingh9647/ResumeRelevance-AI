@@ -6,7 +6,7 @@ ResumeRelevance AI compares an uploaded resume against a job description and ret
 - `matchedSkills`
 - `missingSkills`
 - `aiAdvice`
-- `recommendations` (paste-ready improvement lines)
+- `recommendations` (section-aware improvement lines)
 - `resumeText` (extracted text for live editing)
 
 The project uses a free local vector database and optional Grok AI recommendations.
@@ -99,8 +99,14 @@ Response example:
   "missingSkills": ["Docker", "AWS"],
   "aiAdvice": "Your resume already aligns well on React, TypeScript, Node.js...",
   "recommendations": [
-    "Add a bullet showing Docker usage with deployment outcomes.",
-    "Highlight AWS services used in production projects."
+    {
+      "section": "skills",
+      "text": "Add Docker to your skills list if you can support it with project evidence."
+    },
+    {
+      "section": "experience",
+      "text": "Add a bullet describing where you used AWS in production and what impact it delivered."
+    }
   ],
   "resumeText": "... extracted resume text ..."
 }
@@ -111,7 +117,7 @@ Response example:
 - The server currently supports PDF resume uploads.
 - The index is reused across requests and filtered per analysis ID.
 - If a PDF has very little extractable text, the API returns a validation error.
-- The frontend includes a live editor where recommendation snippets can be inserted and downloaded as an updated PDF resume draft.
+- The frontend includes a live editor where recommendations are inserted into the correct section (for example skills into Skills) and downloaded as an updated PDF resume draft.
 
 ## Commit Workflow
 

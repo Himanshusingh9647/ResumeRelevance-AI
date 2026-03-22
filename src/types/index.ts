@@ -1,9 +1,16 @@
+export type ResumeSection = 'summary' | 'skills' | 'experience' | 'projects' | 'education' | 'certifications' | 'other';
+
+export interface RecommendationItem {
+  section: ResumeSection;
+  text: string;
+}
+
 export interface AnalysisResult {
   matchScore: number;
   matchedSkills: string[];
   missingSkills: string[];
   aiAdvice: string;
-  recommendations: string[];
+  recommendations: RecommendationItem[];
   resumeText: string;
 }
 

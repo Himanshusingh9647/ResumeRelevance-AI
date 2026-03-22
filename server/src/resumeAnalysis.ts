@@ -15,8 +15,15 @@ interface AnalysisResult {
   matchedSkills: string[];
   missingSkills: string[];
   aiAdvice: string;
-  recommendations: string[];
+  recommendations: RecommendationItem[];
   resumeText: string;
+}
+
+type RecommendationSection = 'summary' | 'skills' | 'experience' | 'projects' | 'education' | 'certifications' | 'other';
+
+interface RecommendationItem {
+  section: RecommendationSection;
+  text: string;
 }
 
 interface ResumeChunkMetadata extends Record<string, string | number | boolean> {
@@ -491,10 +498,11 @@ async function generateRecommendationsWithGrok(input: {
   const prompt = [
     'You are an expert resume coach.',
     'Return JSON only with the shape:',
-    '{"aiAdvice":"string", "recommendations":["string", "string", "string", "string", "string"]}',
+    '{"aiAdvice":"string", "recommendations":[{"section":"skills|experience|projects|summary|education|certifications|other","text":"string"}]}',
     'Rules:',
     '- Give concise, specific, role-focused recommendations.',
     '- Recommendations must be 1 sentence each and ready to paste into a resume.',
+    '- Every recommendation must include a section from this exact set: summary, skills, experience, projects, education, certifications, other.',
     '- Do not invent fake achievements or numbers.',
     '- Use action verbs and professional style.',
     '- Recommendations should be grounded in missing or weak alignment areas.',
@@ -556,13 +564,7 @@ async function generateRecommendationsWithGrok(input: {
       ? parsed.aiAdvice.trim()
       : input.fallbackAdvice;
 
-    const recommendations = Array.isArray(parsed.recommendations)
-      ? parsed.recommendations
-        .filter((entry): entry is string => typeof entry === 'string')
-        .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0)
-        .slice(0, 7)
-      : [];
+    const recommendations = parseRecommendationItems(parsed.recommendations).slice(0, 7);
 
     return {
       aiAdvice,
@@ -608,14 +610,61 @@ function safeJsonParse(value: string) {
   }
 }
 
-function buildFallbackRecommendations(missingSkills: string[]) {
+function parseRecommendationItems(value: unknown): RecommendationItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return null;
+      }
+
+      const candidate = entry as { section?: unknown; text?: unknown };
+
+      if (typeof candidate.text !== 'string') {
+        return null;
+      }
+
+      const normalizedSection = normalizeRecommendationSection(candidate.section);
+
+      return {
+        section: normalizedSection,
+        text: candidate.text.trim(),
+      } as RecommendationItem;
+    })
+    .filter((entry): entry is RecommendationItem => Boolean(entry?.text));
+}
+
+function normalizeRecommendationSection(value: unknown): RecommendationSection {
+  if (typeof value !== 'string') {
+    return 'other';
+  }
+
+  const section = value.trim().toLowerCase();
+
+  if (section === 'summary' || section === 'skills' || section === 'experience' || section === 'projects' || section === 'education' || section === 'certifications') {
+    return section;
+  }
+
+  return 'other';
+}
+
+function buildFallbackRecommendations(missingSkills: string[]): RecommendationItem[] {
   const prioritized = missingSkills.slice(0, 4);
 
-  const recommendations = prioritized.map((skill) =>
-    `Add a bullet highlighting hands-on ${skill} experience, including project scope, your contribution, and a measurable outcome where possible.`,
+  const recommendations: RecommendationItem[] = prioritized.map((skill) =>
+    ({
+      section: 'skills' as const,
+      text: `Add ${skill} to your skills list only if you can support it with project or work evidence elsewhere in the resume.`,
+    }),
   );
 
-  recommendations.push('Strengthen your summary with 2-3 role-specific keywords from the job description and align them with your strongest recent achievements.');
+  recommendations.push({
+    section: 'summary',
+    text: 'Strengthen your summary with 2-3 role-specific keywords from the job description and align them with your strongest recent achievements.',
+  });
 
   return recommendations.slice(0, 6);
 }

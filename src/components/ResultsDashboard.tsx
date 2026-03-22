@@ -2,13 +2,14 @@ import { motion, type Variants } from 'framer-motion';
 import { CheckCircle2, XCircle, Sparkles, TrendingUp, AlertTriangle, Wand2, Download } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { cn } from '../lib/utils';
-import type { AnalysisResult } from '../types';
+import type { AnalysisResult, RecommendationItem } from '../types';
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
   editedResumeText: string;
   onEditedResumeTextChange: (value: string) => void;
-  onApplyRecommendation: (recommendation: string) => void;
+  onApplyRecommendation: (recommendation: RecommendationItem) => void;
+  onApplyAllRecommendations: () => void;
   onDownloadUpdatedResume: () => void;
 }
 
@@ -37,9 +38,11 @@ export function ResultsDashboard({
   editedResumeText,
   onEditedResumeTextChange,
   onApplyRecommendation,
+  onApplyAllRecommendations,
   onDownloadUpdatedResume,
 }: ResultsDashboardProps) {
   const { matchScore, matchedSkills, missingSkills, aiAdvice, recommendations } = result;
+  const safeRecommendations = recommendations.filter((entry) => entry && typeof entry.text === 'string' && entry.text.trim().length > 0);
   
   const getScoreLabel = () => {
     if (matchScore >= 85) return { text: 'Excellent Match!', color: 'text-teal-600' };
@@ -222,15 +225,28 @@ export function ResultsDashboard({
           </div>
         </div>
 
+        {safeRecommendations.length > 1 ? (
+          <button
+            onClick={onApplyAllRecommendations}
+            className="mb-4 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition"
+          >
+            <Wand2 className="w-4 h-4" />
+            Apply All In Correct Sections
+          </button>
+        ) : null}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {recommendations.length > 0 ? (
-            recommendations.map((recommendation, index) => (
+          {safeRecommendations.length > 0 ? (
+            safeRecommendations.map((recommendation, index) => (
               <button
-                key={`${recommendation}-${index}`}
+                key={`${recommendation.section}-${recommendation.text}-${index}`}
                 onClick={() => onApplyRecommendation(recommendation)}
                 className="text-left rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/40 transition"
               >
-                <span className="font-semibold text-indigo-600">+ Add:</span> {recommendation}
+                <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 mr-2">
+                  {recommendation.section}
+                </span>
+                <span className="font-semibold text-indigo-600">+ Add:</span> {recommendation.text}
               </button>
             ))
           ) : (

@@ -3,7 +3,175 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { HeroSection, AnalyzerSection, ResultsDashboard } from './components';
-import type { AnalysisResult } from './types';
+import type { AnalysisResult, RecommendationItem, ResumeSection } from './types';
+
+const sectionMatchers: Array<{ section: ResumeSection; patterns: RegExp[]; headingLabel: string }> = [
+  { section: 'summary', headingLabel: 'Summary', patterns: [/^summary$/i, /^professional summary$/i, /^profile$/i] },
+  { section: 'skills', headingLabel: 'Skills', patterns: [/^skills?$/i, /^technical skills?$/i, /^core skills?$/i] },
+  { section: 'experience', headingLabel: 'Experience', patterns: [/^experience$/i, /^work experience$/i, /^professional experience$/i, /^employment history$/i] },
+  { section: 'projects', headingLabel: 'Projects', patterns: [/^projects?$/i, /^personal projects?$/i] },
+  { section: 'education', headingLabel: 'Education', patterns: [/^education$/i, /^academic background$/i] },
+  { section: 'certifications', headingLabel: 'Certifications', patterns: [/^certifications?$/i, /^licenses$/i] },
+  { section: 'other', headingLabel: 'Additional Information', patterns: [] },
+];
+
+function normalizeRecommendationSection(value: unknown): ResumeSection {
+  if (typeof value !== 'string') {
+    return 'other';
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (
+    normalized === 'summary' ||
+    normalized === 'skills' ||
+    normalized === 'experience' ||
+    normalized === 'projects' ||
+    normalized === 'education' ||
+    normalized === 'certifications'
+  ) {
+    return normalized;
+  }
+
+  return 'other';
+}
+
+function inferSectionFromText(value: string): ResumeSection {
+  const text = value.toLowerCase();
+
+  if (/\b(skill|skills|technical)\b/.test(text)) return 'skills';
+  if (/\b(experience|intern|work|professional)\b/.test(text)) return 'experience';
+  if (/\b(project|built|developed)\b/.test(text)) return 'projects';
+  if (/\b(summary|profile)\b/.test(text)) return 'summary';
+  if (/\b(education|degree|university)\b/.test(text)) return 'education';
+  if (/\b(certification|certificate|license)\b/.test(text)) return 'certifications';
+
+  return 'other';
+}
+
+function normalizeRecommendationItem(input: unknown): RecommendationItem | null {
+  if (typeof input === 'string') {
+    const text = input.trim();
+    if (!text) {
+      return null;
+    }
+
+    return {
+      section: inferSectionFromText(text),
+      text,
+    };
+  }
+
+  if (!input || typeof input !== 'object') {
+    return null;
+  }
+
+  const candidate = input as { section?: unknown; text?: unknown };
+
+  if (typeof candidate.text !== 'string') {
+    return null;
+  }
+
+  const text = candidate.text.trim();
+
+  if (!text) {
+    return null;
+  }
+
+  return {
+    section: normalizeRecommendationSection(candidate.section),
+    text,
+  };
+}
+
+function normalizeAnalysisResult(payload: unknown): AnalysisResult {
+  const candidate = (payload && typeof payload === 'object' ? payload : {}) as Partial<AnalysisResult> & {
+    recommendations?: unknown;
+  };
+
+  const recommendations = Array.isArray(candidate.recommendations)
+    ? candidate.recommendations
+      .map((entry) => normalizeRecommendationItem(entry))
+      .filter((entry): entry is RecommendationItem => Boolean(entry))
+    : [];
+
+  return {
+    matchScore: Number(candidate.matchScore ?? 0),
+    matchedSkills: Array.isArray(candidate.matchedSkills) ? candidate.matchedSkills.filter((v): v is string => typeof v === 'string') : [],
+    missingSkills: Array.isArray(candidate.missingSkills) ? candidate.missingSkills.filter((v): v is string => typeof v === 'string') : [],
+    aiAdvice: typeof candidate.aiAdvice === 'string' ? candidate.aiAdvice : '',
+    recommendations,
+    resumeText: typeof candidate.resumeText === 'string' ? candidate.resumeText : '',
+  };
+}
+
+function normalizeLineForMatch(line: string) {
+  return line.replace(/[:\-]+$/g, '').trim().toLowerCase();
+}
+
+function isLineSectionHeading(line: string) {
+  const normalized = normalizeLineForMatch(line);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return sectionMatchers.some((entry) => entry.patterns.some((pattern) => pattern.test(normalized)));
+}
+
+function findSectionStartIndex(lines: string[], targetSection: ResumeSection) {
+  const matcher = sectionMatchers.find((entry) => entry.section === targetSection);
+
+  if (!matcher) {
+    return -1;
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const normalized = normalizeLineForMatch(lines[index]);
+
+    if (matcher.patterns.some((pattern) => pattern.test(normalized))) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function findSectionEndIndex(lines: string[], sectionStartIndex: number) {
+  for (let index = sectionStartIndex + 1; index < lines.length; index += 1) {
+    if (isLineSectionHeading(lines[index])) {
+      return index;
+    }
+  }
+
+  return lines.length;
+}
+
+function insertRecommendationIntoSection(text: string, recommendation: RecommendationItem) {
+  const cleanedRecommendation = recommendation.text?.trim();
+
+  if (!cleanedRecommendation) {
+    return text;
+  }
+
+  if (text.toLowerCase().includes(cleanedRecommendation.toLowerCase())) {
+    return text;
+  }
+
+  const lines = text.split('\n');
+  const targetStartIndex = findSectionStartIndex(lines, recommendation.section);
+
+  if (targetStartIndex >= 0) {
+    const sectionEndIndex = findSectionEndIndex(lines, targetStartIndex);
+    lines.splice(sectionEndIndex, 0, `- ${cleanedRecommendation}`);
+    return lines.join('\n').trimEnd();
+  }
+
+  const matcher = sectionMatchers.find((entry) => entry.section === recommendation.section) ?? sectionMatchers[sectionMatchers.length - 1];
+  const trimmedText = text.trimEnd();
+
+  return `${trimmedText}\n\n${matcher.headingLabel}\n- ${cleanedRecommendation}`.trim();
+}
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -36,7 +204,8 @@ function App() {
         throw new Error(errorPayload.message ?? 'Unable to analyze the resume.');
       }
 
-      const analysisResult: AnalysisResult = await response.json();
+      const payload = await response.json();
+      const analysisResult = normalizeAnalysisResult(payload);
       setResult(analysisResult);
       setEditedResumeText(analysisResult.resumeText);
     } catch (error) {
@@ -55,21 +224,28 @@ function App() {
     setErrorMessage(null);
   }, []);
 
-  const handleApplyRecommendation = useCallback((recommendation: string) => {
+  const handleApplyRecommendation = useCallback((recommendation: RecommendationItem) => {
     setEditedResumeText((currentText) => {
-      const trimmedCurrent = currentText.trimEnd();
-
-      if (!trimmedCurrent) {
-        return recommendation;
-      }
-
-      if (trimmedCurrent.toLowerCase().includes(recommendation.toLowerCase())) {
-        return currentText;
-      }
-
-      return `${trimmedCurrent}\n- ${recommendation}`;
+      const baseText = currentText.trim().length > 0 ? currentText : result?.resumeText ?? '';
+      return insertRecommendationIntoSection(baseText, recommendation);
     });
-  }, []);
+  }, [result?.resumeText]);
+
+  const handleApplyAllRecommendations = useCallback(() => {
+    if (!result?.recommendations?.length) {
+      return;
+    }
+
+    setEditedResumeText((currentText) => {
+      let nextText = currentText.trim().length > 0 ? currentText : result.resumeText;
+
+      for (const recommendation of result.recommendations) {
+        nextText = insertRecommendationIntoSection(nextText, recommendation);
+      }
+
+      return nextText;
+    });
+  }, [result]);
 
   const handleDownloadUpdatedResume = useCallback(() => {
     if (!editedResumeText.trim()) {
@@ -221,6 +397,7 @@ function App() {
                   editedResumeText={editedResumeText}
                   onEditedResumeTextChange={setEditedResumeText}
                   onApplyRecommendation={handleApplyRecommendation}
+                  onApplyAllRecommendations={handleApplyAllRecommendations}
                   onDownloadUpdatedResume={handleDownloadUpdatedResume}
                 />
               </div>
