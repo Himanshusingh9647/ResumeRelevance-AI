@@ -213,7 +213,17 @@ export function ResultsDashboard({
       {/* Recommendation Actions */}
       <motion.div
         variants={itemVariants}
-        className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100"
+        onClick={safeRecommendations.length > 0 ? onApplyAllRecommendations : undefined}
+        role="button"
+        tabIndex={safeRecommendations.length > 0 ? 0 : -1}
+        onKeyDown={(event) => {
+          if (safeRecommendations.length > 0 && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onApplyAllRecommendations();
+          }
+        }}
+        aria-label={safeRecommendations.length > 0 ? 'Apply all recommendations' : 'No recommendations available'}
+        className="glass-card rounded-2xl p-6 shadow-lg border border-slate-100 cursor-pointer"
       >
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
@@ -225,9 +235,12 @@ export function ResultsDashboard({
           </div>
         </div>
 
-        {safeRecommendations.length > 1 ? (
+        {safeRecommendations.length > 0 ? (
           <button
-            onClick={onApplyAllRecommendations}
+            onClick={(event) => {
+              event.stopPropagation();
+              onApplyAllRecommendations();
+            }}
             className="mb-4 inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition"
           >
             <Wand2 className="w-4 h-4" />
@@ -240,7 +253,10 @@ export function ResultsDashboard({
             safeRecommendations.map((recommendation, index) => (
               <button
                 key={`${recommendation.section}-${recommendation.text}-${index}`}
-                onClick={() => onApplyRecommendation(recommendation)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onApplyRecommendation(recommendation);
+                }}
                 className="text-left rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/40 transition"
               >
                 <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 mr-2">

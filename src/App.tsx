@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -179,6 +179,10 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [editedResumeText, setEditedResumeText] = useState('');
+  const [showResumePhotos, setShowResumePhotos] = useState(false);
+  const [resumePhotos, setResumePhotos] = useState<Array<{ id: string; title: string; thumbnailUrl: string; fullImageUrl: string }>>([]);
+  const [resumePhotosLoading, setResumePhotosLoading] = useState(false);
+  const [resumePhotosError, setResumePhotosError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -247,6 +251,39 @@ function App() {
     });
   }, [result]);
 
+  useEffect(() => {
+    if (!showResumePhotos || resumePhotos.length > 0 || resumePhotosLoading) {
+      return;
+    }
+
+    const loadPhotos = async () => {
+      setResumePhotosLoading(true);
+      setResumePhotosError(null);
+
+      try {
+        const response = await fetch('/api/resume-photos');
+
+        if (!response.ok) {
+          throw new Error(`Unable to load resume photos: ${response.status}`);
+        }
+
+        const payload = await response.json();
+
+        if (!payload?.photos || !Array.isArray(payload.photos)) {
+          throw new Error('No resume images returned from server.');
+        }
+
+        setResumePhotos(payload.photos);
+      } catch (error) {
+        setResumePhotosError(error instanceof Error ? error.message : 'Unknown error loading resume photos.');
+      } finally {
+        setResumePhotosLoading(false);
+      }
+    };
+
+    void loadPhotos();
+  }, [showResumePhotos, resumePhotos.length, resumePhotosLoading]);
+
   const handleDownloadUpdatedResume = useCallback(() => {
     if (!editedResumeText.trim()) {
       return;
@@ -301,8 +338,7 @@ function App() {
             </div>
 
             <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
-              <a href="#" className="hover:text-slate-900 transition">Design</a>
-              <a href="#" className="hover:text-slate-900 transition">Photos</a>
+              <a href="#photos" className="hover:text-slate-900 transition">Photos</a>
               <a href="#" className="hover:text-slate-900 transition">About</a>
             </div>
 
@@ -356,6 +392,60 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* Resume Photos Section */}
+        <section id="photos" className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Resume Photos</h2>
+                <p className="text-slate-600">Explore sample resume layouts and click a thumbnail to open it.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResumePhotos((prev) => !prev)}
+                className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition"
+              >
+                {showResumePhotos ? 'Hide Resume Photos' : 'Show Resume Photos'}
+              </button>
+            </div>
+
+            {showResumePhotos && (
+              <div>
+                {resumePhotosLoading && (
+                  <p className="text-sm text-slate-600 mb-4">Loading resume photos...</p>
+                )}
+
+                {resumePhotosError && (
+                  <p className="text-sm text-red-600 mb-4">{resumePhotosError}</p>
+                )}
+
+                {!resumePhotosLoading && !resumePhotosError && resumePhotos.length === 0 && (
+                  <p className="text-sm text-slate-600 mb-4">No resume photos are available.</p>
+                )}
+
+                {!resumePhotosLoading && !resumePhotosError && resumePhotos.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {resumePhotos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={photo.fullImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group block rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-lg transition"
+                      >
+                        <img src={photo.thumbnailUrl} alt={photo.title} className="w-full h-auto" />
+                        <div className="p-2 bg-white">
+                          <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-600">{photo.title}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Analyzer Section */}
         <div className="bg-slate-50 py-12">
