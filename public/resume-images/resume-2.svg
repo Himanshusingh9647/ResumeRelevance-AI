@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1560" viewBox="0 0 1200 1560">
+  <rect width="1200" height="1560" fill="#f8fafc" stroke="#cbd5e1" stroke-width="4" />
+  <text x="50" y="120" font-family="Inter, Arial, sans-serif" font-size="56" font-weight="700" fill="#0f172a">Modern Skill Focus</text>
+  <text x="50" y="220" font-family="Inter, Arial, sans-serif" font-size="32" fill="#475569">Summary: AI-optimized resume text sections with strong keywords.</text>
+  <rect x="50" y="280" width="1100" height="120" fill="#e2e8f0" rx="12" />
+  <text x="70" y="340" font-family="Inter, Arial, sans-serif" font-size="26" fill="#0f172a">• Experienced in modern ATS-friendly formatting</text>
+  <rect x="50" y="430" width="1100" height="940" fill="#fff" stroke="#cbd5e1" stroke-width="2" rx="14" />
+  <text x="70" y="470" font-family="Inter, Arial, sans-serif" font-size="28" fill="#334155">Experience</text>
+  <text x="70" y="520" font-family="Inter, Arial, sans-serif" font-size="22" fill="#475569">- Built scalable applications using Node.js and React.</text>
+  <text x="70" y="560" font-family="Inter, Arial, sans-serif" font-size="22" fill="#475569">- Improved resume matching by 32% with keyword tuning.</text>
+</svg>

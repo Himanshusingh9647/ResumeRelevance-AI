@@ -519,57 +519,107 @@ async function generateRecommendationsWithGrok(input: {
   ].join('\n');
 
   try {
-    const response = await fetch(`${serverConfig.grokBaseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${serverConfig.grokApiKey}`,
-      },
-      body: JSON.stringify({
-        model: serverConfig.grokModel,
-        temperature: 0.25,
-        messages: [
-          {
-            role: 'system',
-            content: 'You produce strict JSON output only.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
-    });
+    const candidateModels = buildCandidateModels(serverConfig.grokModel, serverConfig.grokBaseUrl);
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      throw new Error(`Grok request failed with status ${response.status}`);
+    for (const model of candidateModels) {
+      const response = await fetch(`${serverConfig.grokBaseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serverConfig.grokApiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You produce strict JSON output only.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorDetails = await readErrorBody(response);
+        const shouldTryResponsesApi = response.status === 400 || response.status === 404;
+
+        if (shouldTryResponsesApi) {
+          const responsesResult = await requestRecommendationsViaResponsesApi({
+            model,
+            prompt,
+          });
+
+          if (responsesResult.ok) {
+            const parsed = parseJsonPayload(responsesResult.content);
+
+            if (!parsed) {
+              throw new Error(`Could not parse JSON recommendations from Grok /responses output using model "${model}".`);
+            }
+
+            const aiAdvice = typeof parsed.aiAdvice === 'string' && parsed.aiAdvice.trim().length > 0
+              ? parsed.aiAdvice.trim()
+              : input.fallbackAdvice;
+
+            const recommendations = parseRecommendationItems(parsed.recommendations).slice(0, 7);
+
+            return {
+              aiAdvice,
+              recommendations: recommendations.length > 0 ? recommendations : buildFallbackRecommendations(input.missingSkills),
+            };
+          }
+
+          const responsesErrorSuffix = responsesResult.errorDetails ? `; /responses failed: ${responsesResult.errorDetails}` : '; /responses failed';
+          lastError = new Error(`Grok request failed with status ${response.status} using model "${model}"${errorDetails ? `: ${errorDetails}` : ''}${responsesErrorSuffix}`);
+        } else {
+          lastError = new Error(`Grok request failed with status ${response.status} using model "${model}"${errorDetails ? `: ${errorDetails}` : ''}`);
+        }
+
+        const shouldTryNextModel = response.status === 400 && model !== candidateModels[candidateModels.length - 1];
+
+        if (shouldTryNextModel) {
+          continue;
+        }
+
+        throw lastError;
+      }
+
+      const payload = await response.json() as {
+        choices?: Array<{
+          message?: {
+            content?: string;
+          };
+        }>;
+      };
+
+      const rawContent = payload.choices?.[0]?.message?.content ?? '';
+      const parsed = parseJsonPayload(rawContent);
+
+      if (!parsed) {
+        throw new Error(`Could not parse JSON recommendations from Grok response using model "${model}".`);
+      }
+
+      const aiAdvice = typeof parsed.aiAdvice === 'string' && parsed.aiAdvice.trim().length > 0
+        ? parsed.aiAdvice.trim()
+        : input.fallbackAdvice;
+
+      const recommendations = parseRecommendationItems(parsed.recommendations).slice(0, 7);
+
+      return {
+        aiAdvice,
+        recommendations: recommendations.length > 0 ? recommendations : buildFallbackRecommendations(input.missingSkills),
+      };
     }
 
-    const payload = await response.json() as {
-      choices?: Array<{
-        message?: {
-          content?: string;
-        };
-      }>;
-    };
-
-    const rawContent = payload.choices?.[0]?.message?.content ?? '';
-    const parsed = parseJsonPayload(rawContent);
-
-    if (!parsed) {
-      throw new Error('Could not parse JSON recommendations from Grok response.');
+    if (lastError) {
+      throw lastError;
     }
 
-    const aiAdvice = typeof parsed.aiAdvice === 'string' && parsed.aiAdvice.trim().length > 0
-      ? parsed.aiAdvice.trim()
-      : input.fallbackAdvice;
-
-    const recommendations = parseRecommendationItems(parsed.recommendations).slice(0, 7);
-
-    return {
-      aiAdvice,
-      recommendations: recommendations.length > 0 ? recommendations : buildFallbackRecommendations(input.missingSkills),
-    };
+    throw new Error('Grok request failed before a response was received.');
   } catch (error) {
     console.error('Grok recommendation generation failed. Falling back to local advice.', error);
 
@@ -577,6 +627,126 @@ async function generateRecommendationsWithGrok(input: {
       aiAdvice: input.fallbackAdvice,
       recommendations: buildFallbackRecommendations(input.missingSkills),
     };
+  }
+}
+
+async function requestRecommendationsViaResponsesApi(input: {
+  model: string;
+  prompt: string;
+}): Promise<{ ok: true; content: string } | { ok: false; errorDetails: string }> {
+  const response = await fetch(`${serverConfig.grokBaseUrl}/responses`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${serverConfig.grokApiKey}`,
+    },
+    body: JSON.stringify({
+      model: input.model,
+      input: [
+        {
+          role: 'system',
+          content: 'You produce strict JSON output only.',
+        },
+        {
+          role: 'user',
+          content: input.prompt,
+        },
+      ],
+      text: {
+        format: {
+          type: 'text',
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorDetails = await readErrorBody(response);
+
+    return {
+      ok: false,
+      errorDetails: errorDetails || `status ${response.status}`,
+    };
+  }
+
+  const payload = await response.json() as {
+    output?: Array<{
+      type?: string;
+      content?: Array<{
+        type?: string;
+        text?: string;
+      }>;
+    }>;
+  };
+
+  const messageEntry = payload.output?.find((entry) => entry?.type === 'message');
+  const textEntry = messageEntry?.content?.find((entry) => entry?.type === 'output_text');
+  const content = typeof textEntry?.text === 'string' ? textEntry.text : '';
+
+  if (!content.trim()) {
+    return {
+      ok: false,
+      errorDetails: 'missing output_text content in /responses payload',
+    };
+  }
+
+  return {
+    ok: true,
+    content,
+  };
+}
+
+function buildCandidateModels(configuredModel: string, baseUrl: string): string[] {
+  const model = configuredModel.trim();
+
+  if (!model) {
+    return [];
+  }
+
+  const normalizedBaseUrl = baseUrl.trim().toLowerCase();
+  const isXaiEndpoint = normalizedBaseUrl.includes('api.x.ai');
+  const isGrokModel = model.toLowerCase().startsWith('grok-');
+
+  if (!isXaiEndpoint || !isGrokModel) {
+    return [model];
+  }
+
+  if (model.endsWith('-latest')) {
+    return [model];
+  }
+
+  return [model, `${model}-latest`];
+}
+
+async function readErrorBody(response: Response): Promise<string> {
+  try {
+    const rawBody = await response.text();
+
+    if (!rawBody) {
+      return '';
+    }
+
+    const parsedUnknown = JSON.parse(rawBody) as unknown;
+
+    if (parsedUnknown && typeof parsedUnknown === 'object' && 'error' in parsedUnknown) {
+      const errorContainer = parsedUnknown as { error?: unknown };
+
+      if (!errorContainer.error || typeof errorContainer.error !== 'object') {
+        return rawBody.slice(0, 300);
+      }
+
+      const errorObject = errorContainer.error as { message?: unknown; type?: unknown; code?: unknown };
+      const message = typeof errorObject.message === 'string' ? errorObject.message.trim() : '';
+      const type = typeof errorObject.type === 'string' ? errorObject.type.trim() : '';
+      const code = typeof errorObject.code === 'string' ? errorObject.code.trim() : '';
+      const details = [message, type, code].filter(Boolean).join(' | ');
+
+      return details || rawBody.slice(0, 300);
+    }
+
+    return rawBody.slice(0, 300);
+  } catch {
+    return '';
   }
 }
 

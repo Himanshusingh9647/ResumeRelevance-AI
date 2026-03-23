@@ -16,6 +16,6 @@ export const serverConfig = {
   chunkOverlapWords: 30,
   vectorDebugLogging: process.env.VECTOR_DEBUG !== 'false',
   grokApiKey: process.env.GROK_API_KEY ?? '',
-  grokModel: process.env.GROK_MODEL ?? 'grok-3-mini',
+  grokModel: process.env.GROK_MODEL ?? 'grok-4-latest',
   grokBaseUrl: process.env.GROK_BASE_URL ?? 'https://api.x.ai/v1',
 };
